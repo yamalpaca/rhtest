@@ -10,10 +10,8 @@ const ctx = canvas.getContext("2d")!;
 
 const tileSize: number = 30;
 
-
 const chartWidth = 19;
 const chartHeight = 5;
-
 
 const rowPal: string[] = [
   "#FF9D9D",
@@ -33,18 +31,18 @@ function resizeCanvas() {
 
     for (let i: number = 0; i < chartHeight; i++) {
       ctx.fillStyle = rowPal[i];
-      ctx.fillRect(0, tileSize * i, chartWidth*30, tileSize);
+      ctx.fillRect(0, tileSize * i, chartWidth * 30, tileSize);
     }
 
     ctx.fillStyle = inputPal;
-    ctx.fillRect(0, tileSize * chartHeight, chartWidth*30, 50);
+    ctx.fillRect(0, tileSize * chartHeight, chartWidth * 30, 50);
 
     ctx.fillStyle = "#000000";
     ctx.lineWidth = 0.5;
     for (let i = 0; i < chartHeight; i += 1) {
       ctx.beginPath();
-      ctx.moveTo(0, (i*30)+29);
-      ctx.lineTo(chartWidth*30, (i*30)+29);
+      ctx.moveTo(0, (i * 30) + 29);
+      ctx.lineTo(chartWidth * 30, (i * 30) + 29);
       ctx.stroke();
     }
   }
