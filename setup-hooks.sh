@@ -1,8 +1,3 @@
-#!/usr/bin/env bash
-
-# Script to set up Git hooks for the CMPM 121 project
-# Run this script to enable pre-commit quality checks
-
 echo "🔧 Setting up Git hooks for CMPM 121 project..."
 
 # Check if we're in a Git repository
