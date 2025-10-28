@@ -13,8 +13,6 @@ const tileSize: number = 30;
 const chartWidth = 19;
 const chartHeight = 5;
 
-
-
 const rowPal: string[] = [
   "#FF9D9D",
   "#FFC668",
@@ -47,27 +45,24 @@ function resizeCanvas() {
       ctx.lineTo(chartWidth * 30, (i * 30) + 29);
       ctx.stroke();
     }
-    
 
     const img = new Image();
-  img.src = "/workspaces/rhtest/src/btnicons.png"; // ← Replace with your image path (relative or URL)
+    img.src = "./btnicons.png"; // ← Replace with your image path (relative or URL)
 
     img.onload = function () {
       // Draw image at position (x, y)
-      const x = 100;
-      const y = 50;
+      const x = 0;
+      const y = 0;
 
       // Optional: scale image to fit a specific size
       const width = 60;
       const height = 60;
 
       ctx.drawImage(img, x, y, width, height);
-    }
-
+    };
   }
 }
 
 resizeCanvas();
 
 globalThis.addEventListener("resize", resizeCanvas);
-
