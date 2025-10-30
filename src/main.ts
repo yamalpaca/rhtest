@@ -100,17 +100,11 @@ function drawCanvas() {
 
   for (let i: number = 0; i < gameData.inputLength; i++){
     if (selectX == i && selectY == gameData.critAmt) {
-      ctx.filter = "brightness(175%)";
+      ctx.filter = "brightness(150%)";
     } else {
       ctx.filter = "brightness(100%)";
     }
     drawButton((i*tileSize)+selectOffsetX, gameData.critAmt * tileSize, 1);
-    if (selectX == i && selectY == gameData.critAmt+1) {
-      ctx.filter = "brightness(175%)";
-    } else {
-      ctx.filter = "brightness(100%)";
-    }
-    drawButton((i*tileSize)+selectOffsetX-1, (gameData.critAmt+1) * tileSize, 2);
   }
   ctx.filter = "none";
 
