@@ -1,13 +1,50 @@
 import btnIcons from "./btnicons.png";
 import "./style.css";
 
-document.body.innerHTML = `
-`;
+interface Input {
+  criteria: number;
+  button: number;
+  type: number;
+  amount: number;
+}
+
+const inputDefault: Input = {
+  criteria: 0,
+  button: 1,
+  type: 0,
+  amount: 1,
+};
+
+interface Game {
+  criterias: string[];
+  critWeight: number[];
+  inputs: Input[];
+}
+
+const gameData: Game = {
+  criterias: ["Normal", "Triple Punch"],
+  critWeight: [65, 25, 10],
+  inputs: [
+    ...Array(13).fill({ ...inputDefault }),
+    { ...inputDefault, criteria: 2 },
+    { ...inputDefault, criteria: 0 },
+    ...Array(3).fill({ ...inputDefault, criteria: 1 }),
+    { ...inputDefault, criteria: 0 },
+  ],
+};
 
 const canvas = document.createElement("canvas");
 document.body.append(canvas);
-
 const ctx = canvas.getContext("2d")!;
+
+const scoreText = document.createElement("p");
+scoreText.innerHTML = `<span id="finalScore"></span>`;
+scoreText.style.fontFamily = "Kurokane";
+document.body.append(scoreText);
+const finalScore = document.getElementById("finalScore");
+
+let dataTable = document.createElement("table");
+document.body.append(dataTable);
 
 const tileSize: number = 30;
 
@@ -25,38 +62,32 @@ myImage.src = btnIcons;
 
 let selectX: number = -1;
 let selectY: number = -1;
-const selectOffsetX = 130;
+const selectOffsetX = 134;
 let mouseFocus: number = 0;
 
-interface Game {
-  inputLength: number;
-  critAmt: number;
-  critNames: string[];
-}
-
-const gameData: Game = {
-  inputLength: 19,
-  critAmt: 5,
-  critNames: ["A", "B", "C", "D"],
-};
-
-const btnPressed: boolean[] = Array(gameData.inputLength).fill(true);
+const btnPressed: boolean[] = Array(gameData.inputs.length).fill(true);
 let drawState: boolean;
+
+function updatePage() {
+  drawCanvas();
+  updateScore();
+}
 
 function drawCanvas() {
   canvas.width = globalThis.innerWidth - 40;
-  canvas.height = (tileSize * (gameData.critAmt + 1)) + 30;
+  canvas.height = (tileSize * (gameData.criterias.length + 2)) + 30;
 
   if (!ctx) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (let i: number = 0; i < gameData.critAmt; i++) {
+  for (let i: number = 0; i < gameData.criterias.length + 1; i++) {
     ctx.fillStyle = rowPal[i];
+    if (i == gameData.criterias.length) ctx.fillStyle = rowPal[4];
     ctx.fillRect(
       0,
       tileSize * i,
-      (gameData.inputLength * 30) + selectOffsetX + 1,
+      (gameData.inputs.length * 30) + selectOffsetX,
       tileSize,
     );
 
@@ -64,7 +95,10 @@ function drawCanvas() {
     ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(0, (i * 30) + 29);
-    ctx.lineTo((gameData.inputLength * 30) + selectOffsetX + 1, (i * 30) + 29);
+    ctx.lineTo(
+      (gameData.inputs.length * 30) + selectOffsetX + 1,
+      (i * 30) + 29,
+    );
     ctx.stroke();
 
     ctx.fillStyle = "black";
@@ -72,48 +106,56 @@ function drawCanvas() {
     ctx.letterSpacing = "1px";
     ctx.textAlign = "right";
 
-    if (i == gameData.critAmt - 1) {
-      ctx.fillText("Skill Star", selectOffsetX - 8, (i * 30) + 21);
+    if (i == gameData.criterias.length) {
+      ctx.fillText("Skill Star", selectOffsetX - 7, (i * 30) + 21);
     } else {
-      ctx.fillText(gameData.critNames[i], selectOffsetX - 8, (i * 30) + 21);
+      ctx.fillText(gameData.criterias[i], selectOffsetX - 7, (i * 30) + 21);
     }
   }
 
   ctx.fillStyle = inputPal;
   ctx.fillRect(
     0,
-    tileSize * gameData.critAmt,
-    (gameData.inputLength * 30) + selectOffsetX + 1,
+    tileSize * (gameData.criterias.length + 1),
+    (gameData.inputs.length * 30) + selectOffsetX,
     60,
   );
   ctx.fillStyle = "white";
-  ctx.fillText("Buttons", selectOffsetX - 8, (gameData.critAmt * 30) + 21);
-  ctx.fillText("Timing", selectOffsetX - 8, (gameData.critAmt * 30) + 51);
+  ctx.fillText(
+    "Buttons",
+    selectOffsetX - 7,
+    ((gameData.criterias.length + 1) * 30) + 21,
+  );
+  ctx.fillText(
+    "Timing",
+    selectOffsetX - 7,
+    ((gameData.criterias.length + 1) * 30) + 51,
+  );
 
   ctx.strokeStyle = "black";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(selectOffsetX - 2, 0);
-  ctx.lineTo(selectOffsetX - 2, gameData.critAmt * 30);
+  ctx.moveTo(selectOffsetX - 1, 0);
+  ctx.lineTo(selectOffsetX - 1, (gameData.criterias.length + 1) * 30);
   ctx.stroke();
   ctx.strokeStyle = "white";
   ctx.beginPath();
-  ctx.moveTo(selectOffsetX - 2, gameData.critAmt * 30);
-  ctx.lineTo(selectOffsetX - 2, (gameData.critAmt * 30) + 60);
+  ctx.moveTo(selectOffsetX - 1, (gameData.criterias.length + 1) * 30);
+  ctx.lineTo(selectOffsetX - 1, ((gameData.criterias.length + 1) * 30) + 60);
   ctx.stroke();
 
-  if (selectX > -1 && selectX < gameData.inputLength) {
+  if (selectX > -1 && selectX < gameData.inputs.length) {
     ctx.fillStyle = "#ffffff30";
     ctx.fillRect(
       (selectX * tileSize) + selectOffsetX,
-      tileSize * gameData.critAmt,
+      tileSize * (gameData.criterias.length + 1),
       tileSize,
       60,
     );
   }
 
-  for (let i: number = 0; i < gameData.inputLength; i++) {
-    if (selectX == i && selectY == gameData.critAmt) {
+  for (let i: number = 0; i < gameData.inputs.length; i++) {
+    if (selectX == i && selectY == gameData.criterias.length + 1) {
       ctx.filter = "brightness(150%)";
       if (mouseFocus != 0) ctx.filter = "brightness(75%)";
     } else {
@@ -124,53 +166,148 @@ function drawCanvas() {
       ctx.filter += "grayscale(100%)";
     }
 
-    drawButton((i * tileSize) + selectOffsetX, gameData.critAmt * tileSize, 1);
+    drawButton(
+      (i * tileSize) + selectOffsetX,
+      (gameData.criterias.length + 1) * tileSize,
+      gameData.inputs[i].button,
+    );
 
+    ctx.fillStyle = "black";
+    ctx.fillRect(
+      (i * tileSize) + selectOffsetX,
+      gameData.inputs[i].criteria * tileSize,
+      4,
+      4,
+    );
+    /*
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.letterSpacing = "0px";
     ctx.filter = "none";
     ctx.fillText(
-      "0",
+      "+0",
       (i * tileSize) + selectOffsetX + 15,
-      ((gameData.critAmt + 1) * tileSize) + 21,
+      ((gameData.criterias.length + 2) * tileSize) + 21,
     );
+    */
   }
   ctx.filter = "none";
 }
 
-myImage.onload = () => drawCanvas();
+function updateScore() {
+  if (!finalScore) return;
+  const scores: number[] = Array(gameData.criterias.length + 1).fill(0);
+  const totalInputs: number[] = Array(gameData.criterias.length + 1).fill(0);
 
-globalThis.addEventListener("resize", drawCanvas);
+  for (let i: number = 0; i < gameData.inputs.length; i++) {
+    const crit = gameData.inputs[i].criteria;
+    totalInputs[crit]++;
+    if (btnPressed[i]) scores[crit]++;
+  }
+
+  let scoreSum: number = 0;
+  for (let i: number = 0; i < gameData.criterias.length + 1; i++) {
+    scoreSum += gameData.critWeight[i] * (scores[i] / totalInputs[i]);
+  }
+
+  finalScore.textContent = scoreSum.toString();
+
+  const temp = document.createElement("table");
+  temp.style.borderCollapse = "collapse";
+  temp.style.font = "16px FOT-Seurat Pro";
+
+  for (let i = 0; i < gameData.criterias.length + 2; i++) {
+    const row = temp.insertRow(-1);
+    for (let j = 0; j < 5; j++) {
+      const cell = row.insertCell(-1);
+      cell.style.border = "1px solid black";
+
+      let text = "";
+
+      switch (j) {
+        case 0: {
+          if (i == 0) text = "criteria";
+          else if (i == gameData.criterias.length + 1) text = "Skill Star";
+          else {
+            text = gameData.criterias[i - 1];
+          }
+
+          break;
+        }
+        case 1: {
+          if (i == 0) text = "weight";
+          else {
+            text = gameData.critWeight[i - 1].toString() + "%";
+          }
+          break;
+        }
+        case 2: {
+          if (i == 0) text = "wpi";
+          else {
+            text = (1 / totalInputs[i - 1] * gameData.critWeight[i - 1])
+              .toString();
+          }
+          break;
+        }
+        case 3: {
+          if (i == 0) text = "score";
+          else {
+            text = scores[i - 1].toString() + " / " +
+              totalInputs[i - 1].toString();
+          }
+          break;
+        }
+        case 4: {
+          if (i == 0) text = "weighted score";
+          else {
+            text =
+              (scores[i - 1] / totalInputs[i - 1] * gameData.critWeight[i - 1])
+                .toString();
+          }
+          break;
+        }
+      }
+
+      cell.appendChild(document.createTextNode(text));
+    }
+  }
+
+  dataTable.replaceWith(temp);
+  dataTable = temp;
+}
+
+myImage.onload = () => updatePage();
+
+globalThis.addEventListener("resize", updatePage);
 
 canvas.addEventListener("mousemove", (e) => {
   selectX = Math.floor((e.offsetX - selectOffsetX) / 30);
   selectY = Math.floor(e.offsetY / 30);
-  if (mouseFocus == 2 && selectY == gameData.critAmt) {
+  if (mouseFocus == 2 && selectY == gameData.criterias.length + 1) {
     btnPressed[selectX] = drawState;
   }
-  drawCanvas();
+  updatePage();
 });
 
 canvas.addEventListener("mousedown", () => {
   mouseFocus = 1;
-  if (selectY == gameData.critAmt) {
+  if (selectY == gameData.criterias.length + 1) {
     mouseFocus = 2;
     drawState = !btnPressed[selectX];
     btnPressed[selectX] = !btnPressed[selectX];
   }
-  drawCanvas();
+  updatePage();
 });
 
 canvas.addEventListener("mouseup", () => {
   mouseFocus = 0;
-  drawCanvas();
+  updatePage();
 });
 
 canvas.addEventListener("mouseleave", () => {
   selectX = -1;
   selectY = -1;
-  drawCanvas();
+  updatePage();
 });
 
 function drawButton(x: number, y: number, index: number): void {
