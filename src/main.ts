@@ -1,4 +1,5 @@
-import btnIcons from "./btnicons.png";
+import btnimg from "./btnimg.png";
+import pntimg from "./pntimg.png";
 import "./style.css";
 
 interface Input {
@@ -57,8 +58,10 @@ const rowPal: string[] = [
 ];
 const inputPal: string = "#141414ff";
 
-const myImage = new Image();
-myImage.src = btnIcons;
+const btnIcons = new Image();
+btnIcons.src = btnimg;
+const pntIcons = new Image();
+pntIcons.src = pntimg;
 
 let selectX: number = -1;
 let selectY: number = -1;
@@ -70,7 +73,7 @@ let drawState: boolean;
 
 function updatePage() {
   drawCanvas();
-  updateScore();
+  updateText();
 }
 
 function drawCanvas() {
@@ -155,6 +158,20 @@ function drawCanvas() {
   }
 
   for (let i: number = 0; i < gameData.inputs.length; i++) {
+    ctx.filter = "brightness(100%)";
+    let pntindex = gameData.inputs[i].criteria;
+    if (pntindex == gameData.criterias.length) pntindex = 4;
+    let pnttype = 0;
+    if (!btnPressed[i]) pnttype = 3;
+
+    drawIcon(
+      (i * tileSize) + selectOffsetX,
+      gameData.inputs[i].criteria * tileSize,
+      pnttype,
+      pntindex,
+      pntIcons,
+    );
+
     if (selectX == i && selectY == gameData.criterias.length + 1) {
       ctx.filter = "brightness(150%)";
       if (mouseFocus != 0) ctx.filter = "brightness(75%)";
@@ -166,19 +183,14 @@ function drawCanvas() {
       ctx.filter += "grayscale(100%)";
     }
 
-    drawButton(
+    drawIcon(
       (i * tileSize) + selectOffsetX,
       (gameData.criterias.length + 1) * tileSize,
       gameData.inputs[i].button,
+      0,
+      btnIcons,
     );
 
-    ctx.fillStyle = "black";
-    ctx.fillRect(
-      (i * tileSize) + selectOffsetX,
-      gameData.inputs[i].criteria * tileSize,
-      4,
-      4,
-    );
     /*
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
@@ -194,7 +206,7 @@ function drawCanvas() {
   ctx.filter = "none";
 }
 
-function updateScore() {
+function updateText() {
   if (!finalScore) return;
   const scores: number[] = Array(gameData.criterias.length + 1).fill(0);
   const totalInputs: number[] = Array(gameData.criterias.length + 1).fill(0);
@@ -210,7 +222,7 @@ function updateScore() {
     scoreSum += gameData.critWeight[i] * (scores[i] / totalInputs[i]);
   }
 
-  finalScore.textContent = scoreSum.toString();
+  finalScore.textContent = Math.floor(badRounding(scoreSum)).toString();
 
   const temp = document.createElement("table");
   temp.style.borderCollapse = "collapse";
@@ -221,11 +233,18 @@ function updateScore() {
     for (let j = 0; j < 5; j++) {
       const cell = row.insertCell(-1);
       cell.style.border = "1px solid black";
+      cell.style.textAlign = "center";
+      cell.style.width = "100px";
+      cell.style.height = "0px";
+      cell.style.padding = "0px";
 
       let text = "";
 
       switch (j) {
         case 0: {
+          cell.style.textAlign = "right";
+          cell.style.width = "125px";
+          cell.style.padding = "0px 8px 0px 8px";
           if (i == 0) text = "criteria";
           else if (i == gameData.criterias.length + 1) text = "Skill Star";
           else {
@@ -244,8 +263,9 @@ function updateScore() {
         case 2: {
           if (i == 0) text = "wpi";
           else {
-            text = (1 / totalInputs[i - 1] * gameData.critWeight[i - 1])
-              .toString();
+            text = badRounding(
+              1 / totalInputs[i - 1] * gameData.critWeight[i - 1],
+            ).toString();
           }
           break;
         }
@@ -258,11 +278,11 @@ function updateScore() {
           break;
         }
         case 4: {
-          if (i == 0) text = "weighted score";
+          if (i == 0) text = "w score";
           else {
-            text =
-              (scores[i - 1] / totalInputs[i - 1] * gameData.critWeight[i - 1])
-                .toString();
+            text = badRounding(
+              scores[i - 1] / totalInputs[i - 1] * gameData.critWeight[i - 1],
+            ).toString();
           }
           break;
         }
@@ -276,7 +296,12 @@ function updateScore() {
   dataTable = temp;
 }
 
-myImage.onload = () => updatePage();
+function badRounding(n: number) {
+  return Math.floor(n * 100) / 100;
+}
+
+btnIcons.onload = () => updatePage();
+pntIcons.onload = () => updatePage();
 
 globalThis.addEventListener("resize", updatePage);
 
@@ -310,6 +335,12 @@ canvas.addEventListener("mouseleave", () => {
   updatePage();
 });
 
-function drawButton(x: number, y: number, index: number): void {
-  ctx.drawImage(myImage, index * 30, 0, 30, 30, x, y, 30, 30);
+function drawIcon(
+  x: number,
+  y: number,
+  ix: number,
+  iy: number,
+  img: HTMLImageElement,
+): void {
+  ctx.drawImage(img, ix * 30, iy * 30, 30, 30, x, y, 30, 30);
 }
