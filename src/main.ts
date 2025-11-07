@@ -1,4 +1,5 @@
 import btnimg from "./btnimg.png";
+import meterimg from "./meterimg.png";
 import pntimg from "./pntimg.png";
 import "./style.css";
 
@@ -34,12 +35,20 @@ const gameData: Game = {
   ],
 };
 
-const canvas = document.createElement("canvas");
-document.body.append(canvas);
-const ctx = canvas.getContext("2d")!;
+const chartCanvas = document.createElement("canvas");
+document.body.append(chartCanvas);
+
+const pressText = document.createElement("p");
+pressText.innerHTML = `Presses: <span id="pressCounter"/>`;
+pressText.style.fontFamily = "FOT-Seurat Pro";
+document.body.append(pressText);
+const pressCounter = document.getElementById("pressCounter");
+
+const meterCanvas = document.createElement("canvas");
+document.body.append(meterCanvas);
 
 const scoreText = document.createElement("p");
-scoreText.innerHTML = `<span id="finalScore"></span>`;
+scoreText.innerHTML = `<span id="finalScore"/>`;
 scoreText.style.fontFamily = "Kurokane";
 document.body.append(scoreText);
 const finalScore = document.getElementById("finalScore");
@@ -62,6 +71,8 @@ const btnIcons = new Image();
 btnIcons.src = btnimg;
 const pntIcons = new Image();
 pntIcons.src = pntimg;
+const meter = new Image();
+meter.src = meterimg;
 
 let selectX: number = -1;
 let selectY: number = -1;
@@ -72,17 +83,19 @@ const btnPressed: boolean[] = Array(gameData.inputs.length).fill(true);
 let drawState: boolean;
 
 function updatePage() {
-  drawCanvas();
+  drawChartCanvas();
   updateText();
+  drawMeterCanvas();
 }
 
-function drawCanvas() {
-  canvas.width = globalThis.innerWidth - 40;
-  canvas.height = (tileSize * (gameData.criterias.length + 2)) + 30;
+function drawChartCanvas() {
+  chartCanvas.width = globalThis.innerWidth - 40;
+  chartCanvas.height = (tileSize * (gameData.criterias.length + 2)) + 30;
 
+  const ctx = chartCanvas.getContext("2d")!;
   if (!ctx) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
 
   for (let i: number = 0; i < gameData.criterias.length + 1; i++) {
     ctx.fillStyle = rowPal[i];
@@ -99,7 +112,7 @@ function drawCanvas() {
     ctx.beginPath();
     ctx.moveTo(0, (i * 30) + 29);
     ctx.lineTo(
-      (gameData.inputs.length * 30) + selectOffsetX + 1,
+      (gameData.inputs.length * 30) + selectOffsetX,
       (i * 30) + 29,
     );
     ctx.stroke();
@@ -170,6 +183,7 @@ function drawCanvas() {
       pnttype,
       pntindex,
       pntIcons,
+      chartCanvas,
     );
 
     if (selectX == i && selectY == gameData.criterias.length + 1) {
@@ -189,32 +203,54 @@ function drawCanvas() {
       gameData.inputs[i].button,
       0,
       btnIcons,
+      chartCanvas,
     );
-
-    /*
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-    ctx.letterSpacing = "0px";
-    ctx.filter = "none";
-    ctx.fillText(
-      "+0",
-      (i * tileSize) + selectOffsetX + 15,
-      ((gameData.criterias.length + 2) * tileSize) + 21,
-    );
-    */
   }
   ctx.filter = "none";
 }
 
+function drawMeterCanvas() {
+  const ctx = meterCanvas.getContext("2d")!;
+  if (!ctx || !finalScore) return;
+
+  ctx.fillStyle = "#2A2A2A";
+  ctx.fillRect(9, 9, 214, 30);
+
+  if (+finalScore.textContent > 60) {
+    if (+finalScore.textContent > 80) {
+      ctx.fillStyle = "#FF0000";
+      ctx.fillRect(9, 9, 214 * (+finalScore.textContent / 100), 30);
+      ctx.fillStyle = "#00BE00";
+      ctx.fillRect(9, 9, 214 * 0.8, 30);
+    } else {
+      ctx.fillStyle = "#00BE00";
+      ctx.fillRect(9, 9, 214 * (+finalScore.textContent / 100), 30);
+    }
+
+    ctx.fillStyle = "#00B4FF";
+    ctx.fillRect(9, 9, 214 * 0.6, 30);
+  } else {
+    ctx.fillStyle = "#00B4FF";
+    ctx.fillRect(9, 9, 214 * (+finalScore.textContent / 100), 30);
+  }
+
+  ctx.drawImage(meter, 0, 0, 232, 48);
+}
+
 function updateText() {
   if (!finalScore) return;
+  if (!pressCounter) return;
   const scores: number[] = Array(gameData.criterias.length + 1).fill(0);
   const totalInputs: number[] = Array(gameData.criterias.length + 1).fill(0);
+  let presses: number = 0;
 
   for (let i: number = 0; i < gameData.inputs.length; i++) {
     const crit = gameData.inputs[i].criteria;
     totalInputs[crit]++;
-    if (btnPressed[i]) scores[crit]++;
+    if (btnPressed[i]) {
+      scores[crit]++;
+      presses++;
+    }
   }
 
   let scoreSum: number = 0;
@@ -223,6 +259,7 @@ function updateText() {
   }
 
   finalScore.textContent = Math.floor(badRounding(scoreSum)).toString();
+  pressCounter.textContent = presses.toString();
 
   const temp = document.createElement("table");
   temp.style.borderCollapse = "collapse";
@@ -302,10 +339,11 @@ function badRounding(n: number) {
 
 btnIcons.onload = () => updatePage();
 pntIcons.onload = () => updatePage();
+meter.onload = () => updatePage();
 
 globalThis.addEventListener("resize", updatePage);
 
-canvas.addEventListener("mousemove", (e) => {
+chartCanvas.addEventListener("mousemove", (e) => {
   selectX = Math.floor((e.offsetX - selectOffsetX) / 30);
   selectY = Math.floor(e.offsetY / 30);
   if (mouseFocus == 2 && selectY == gameData.criterias.length + 1) {
@@ -314,7 +352,7 @@ canvas.addEventListener("mousemove", (e) => {
   updatePage();
 });
 
-canvas.addEventListener("mousedown", () => {
+chartCanvas.addEventListener("mousedown", () => {
   mouseFocus = 1;
   if (selectY == gameData.criterias.length + 1) {
     mouseFocus = 2;
@@ -324,12 +362,12 @@ canvas.addEventListener("mousedown", () => {
   updatePage();
 });
 
-canvas.addEventListener("mouseup", () => {
+chartCanvas.addEventListener("mouseup", () => {
   mouseFocus = 0;
   updatePage();
 });
 
-canvas.addEventListener("mouseleave", () => {
+chartCanvas.addEventListener("mouseleave", () => {
   selectX = -1;
   selectY = -1;
   updatePage();
@@ -341,6 +379,8 @@ function drawIcon(
   ix: number,
   iy: number,
   img: HTMLImageElement,
+  canvas: HTMLCanvasElement,
 ): void {
+  const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, ix * 30, iy * 30, 30, 30, x, y, 30, 30);
 }
