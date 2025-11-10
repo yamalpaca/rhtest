@@ -59,13 +59,12 @@ document.body.append(dataTable);
 const tileSize: number = 30;
 
 const rowPal: string[] = [
-  "#FF9D9D",
-  "#FFC668",
+  "#ABC8FF",
   "#AAFF9B",
+  "#FF9D9D",
   "#F0BAFF",
   "#FFE002",
 ];
-const inputPal: string = "#141414ff";
 
 const btnIcons = new Image();
 btnIcons.src = btnimg;
@@ -76,7 +75,7 @@ meter.src = meterimg;
 
 let selectX: number = -1;
 let selectY: number = -1;
-const selectOffsetX = 134;
+const selectOffsetX = 90;
 let mouseFocus: number = 0;
 
 const btnPressed: boolean[] = Array(gameData.inputs.length).fill(true);
@@ -89,82 +88,103 @@ function updatePage() {
 }
 
 function drawChartCanvas() {
-  chartCanvas.width = globalThis.innerWidth - 40;
-  chartCanvas.height = (tileSize * (gameData.criterias.length + 2)) + 30;
+  //chartCanvas.width = globalThis.innerWidth - 40;
+  chartCanvas.width = (gameData.inputs.length * tileSize) + selectOffsetX;
+  chartCanvas.height = (tileSize * (gameData.criterias.length + 3)) + 30;
 
   const ctx = chartCanvas.getContext("2d")!;
   if (!ctx) return;
 
   ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+  ctx.fillStyle = "#141414ff";
+  ctx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(selectOffsetX - 1, 0);
+  ctx.lineTo(selectOffsetX - 1, (gameData.criterias.length + 4) * tileSize);
+  ctx.stroke();
 
   for (let i: number = 0; i < gameData.criterias.length + 1; i++) {
     ctx.fillStyle = rowPal[i];
     if (i == gameData.criterias.length) ctx.fillStyle = rowPal[4];
     ctx.fillRect(
       0,
-      tileSize * i,
-      (gameData.inputs.length * 30) + selectOffsetX,
+      tileSize * (i + 1),
+      (gameData.inputs.length * tileSize) + selectOffsetX,
       tileSize,
     );
 
     ctx.strokeStyle = "black";
     ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(0, (i * 30) + 29);
+    ctx.moveTo(0, (i * 30) + 59);
     ctx.lineTo(
       (gameData.inputs.length * 30) + selectOffsetX,
-      (i * 30) + 29,
+      (i * 30) + 59,
     );
     ctx.stroke();
 
     ctx.fillStyle = "black";
-    ctx.font = "16px FOT-Seurat Pro";
     ctx.letterSpacing = "1px";
     ctx.textAlign = "right";
 
+    ctx.fillStyle = "black";
+    ctx.font = "12px Arial";
+    ctx.fillText("999/999", selectOffsetX - 32, (i + 2) * tileSize - 10);
+
     if (i == gameData.criterias.length) {
-      ctx.fillText("Skill Star", selectOffsetX - 7, (i * 30) + 21);
+      drawIcon(
+        selectOffsetX - tileSize - 1,
+        (i + 1) * tileSize,
+        0,
+        4,
+        pntIcons,
+        chartCanvas,
+      );
     } else {
-      ctx.fillText(gameData.criterias[i], selectOffsetX - 7, (i * 30) + 21);
+      drawIcon(
+        selectOffsetX - tileSize - 1,
+        (i + 1) * tileSize,
+        0,
+        i,
+        pntIcons,
+        chartCanvas,
+      );
     }
   }
 
-  ctx.fillStyle = inputPal;
-  ctx.fillRect(
-    0,
-    tileSize * (gameData.criterias.length + 1),
-    (gameData.inputs.length * 30) + selectOffsetX,
-    60,
-  );
+  ctx.font = "16px FOT-Seurat Pro";
   ctx.fillStyle = "white";
+  ctx.fillText(
+    "Inputs",
+    selectOffsetX - 7,
+    21,
+  );
   ctx.fillText(
     "Buttons",
     selectOffsetX - 7,
-    ((gameData.criterias.length + 1) * 30) + 21,
+    ((gameData.criterias.length + 2) * 30) + 21,
   );
   ctx.fillText(
     "Timing",
     selectOffsetX - 7,
-    ((gameData.criterias.length + 1) * 30) + 51,
+    ((gameData.criterias.length + 2) * 30) + 51,
   );
 
   ctx.strokeStyle = "black";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(selectOffsetX - 1, 0);
-  ctx.lineTo(selectOffsetX - 1, (gameData.criterias.length + 1) * 30);
-  ctx.stroke();
-  ctx.strokeStyle = "white";
-  ctx.beginPath();
-  ctx.moveTo(selectOffsetX - 1, (gameData.criterias.length + 1) * 30);
-  ctx.lineTo(selectOffsetX - 1, ((gameData.criterias.length + 1) * 30) + 60);
+  ctx.moveTo(selectOffsetX - 1, tileSize);
+  ctx.lineTo(selectOffsetX - 1, (gameData.criterias.length + 2) * tileSize);
   ctx.stroke();
 
   if (selectX > -1 && selectX < gameData.inputs.length) {
     ctx.fillStyle = "#ffffff30";
     ctx.fillRect(
       (selectX * tileSize) + selectOffsetX,
-      tileSize * (gameData.criterias.length + 1),
+      tileSize * (gameData.criterias.length + 2),
       tileSize,
       60,
     );
@@ -174,19 +194,19 @@ function drawChartCanvas() {
     ctx.filter = "brightness(100%)";
     let pntindex = gameData.inputs[i].criteria;
     if (pntindex == gameData.criterias.length) pntindex = 4;
-    let pnttype = 0;
-    if (!btnPressed[i]) pnttype = 3;
+    let pnttype = 1;
+    if (!btnPressed[i]) pnttype = 4;
 
     drawIcon(
       (i * tileSize) + selectOffsetX,
-      gameData.inputs[i].criteria * tileSize,
+      (gameData.inputs[i].criteria + 1) * tileSize,
       pnttype,
       pntindex,
       pntIcons,
       chartCanvas,
     );
 
-    if (selectX == i && selectY == gameData.criterias.length + 1) {
+    if (selectX == i && selectY == gameData.criterias.length + 2) {
       ctx.filter = "brightness(150%)";
       if (mouseFocus != 0) ctx.filter = "brightness(75%)";
     } else {
@@ -199,7 +219,7 @@ function drawChartCanvas() {
 
     drawIcon(
       (i * tileSize) + selectOffsetX,
-      (gameData.criterias.length + 1) * tileSize,
+      (gameData.criterias.length + 2) * tileSize,
       gameData.inputs[i].button,
       0,
       btnIcons,
@@ -346,7 +366,7 @@ globalThis.addEventListener("resize", updatePage);
 chartCanvas.addEventListener("mousemove", (e) => {
   selectX = Math.floor((e.offsetX - selectOffsetX) / 30);
   selectY = Math.floor(e.offsetY / 30);
-  if (mouseFocus == 2 && selectY == gameData.criterias.length + 1) {
+  if (mouseFocus == 2 && selectY == gameData.criterias.length + 2) {
     btnPressed[selectX] = drawState;
   }
   updatePage();
@@ -354,7 +374,7 @@ chartCanvas.addEventListener("mousemove", (e) => {
 
 chartCanvas.addEventListener("mousedown", () => {
   mouseFocus = 1;
-  if (selectY == gameData.criterias.length + 1) {
+  if (selectY == gameData.criterias.length + 2) {
     mouseFocus = 2;
     drawState = !btnPressed[selectX];
     btnPressed[selectX] = !btnPressed[selectX];
