@@ -7,9 +7,10 @@ interface Criteria {
   id: number;
   name: string;
   weight: number;
-  hit: number;
-  total: number;
+  hits: number;
   score: number;
+  total: number;
+  result: number;
 }
 
 const critPal: string[] = [
@@ -90,22 +91,29 @@ meter.src = meterimg;
 
 let selectX: number = -1;
 let selectY: number = -1;
+let prevSelectX: number = -1;
 const selectOffsetX = 90;
 let mouseFocus: number = 0;
-const currCrit: Criteria[] = [];
+const critData: Criteria[] = [];
 
 const btnPressed: boolean[] = Array(gameData.inputs.length).fill(true);
+const btnAccuracy: number[] = Array(gameData.inputs.length).fill(100);
 let drawState: boolean;
+let drawAccState: number;
 
-function updatePage() {
-  updateData();
-  drawChartCanvas();
-  updateText();
-  drawMeterCanvas();
+function updatePage(all: boolean) {
+  if (all) {
+    updateData();
+    drawChartCanvas();
+    updateText();
+    drawMeterCanvas();
+  }
+
+  drawInterface();
 }
 
 function updateData() {
-  currCrit.splice(0, currCrit.length);
+  critData.splice(0, critData.length);
 
   prevScore = finalScore;
 
@@ -114,34 +122,38 @@ function updateData() {
   pressCounter = 0;
 
   for (let i: number = 0; i < gameData.critid.length; i++) {
-    currCrit.push({
+    critData.push({
       id: gameData.critid[i],
       name: gameData.critid[i] == 4 ? "Skill Star" : gameData.critname[i],
       weight: gameData.critweight[i],
-      hit: 0,
-      total: 0,
+      hits: 0,
       score: 0,
+      total: 0,
+      result: 0,
     });
   }
 
   for (let i: number = 0; i < gameData.inputs.length; i++) {
-    currCrit[gameData.inputs[i].criteria].total++;
+    critData[gameData.inputs[i].criteria].total++;
     if (btnPressed[i]) {
       pressCounter++;
-      currCrit[gameData.inputs[i].criteria].hit++;
+      critData[gameData.inputs[i].criteria].hits++;
+      critData[gameData.inputs[i].criteria].score += btnAccuracy[i];
     }
   }
 
-  currCrit.forEach((c: Criteria) => {
-    c.score = (c.hit / c.total) * c.weight;
-    finalScore += c.score;
+  critData.forEach((c: Criteria) => {
+    c.result = (c.score / (c.total * 100)) * c.weight;
+    finalScore += c.result;
   });
 }
 
 function drawChartCanvas() {
   //chartCanvas.width = globalThis.innerWidth - 40;
   chartCanvas.width = (gameData.inputs.length * tileSize) + selectOffsetX;
-  chartCanvas.height = tileSize * (currCrit.length + 3);
+  chartCanvas.height = tileSize * (critData.length + 3);
+
+  chartCanvas.style.borderRadius = "10px";
 
   const ctx = chartCanvas.getContext("2d")!;
   if (!ctx) return;
@@ -154,11 +166,11 @@ function drawChartCanvas() {
   ctx.lineWidth = 0.5;
   ctx.beginPath();
   ctx.moveTo(selectOffsetX - 1, 0);
-  ctx.lineTo(selectOffsetX - 1, (currCrit.length + 3) * tileSize);
+  ctx.lineTo(selectOffsetX - 1, (critData.length + 3) * tileSize);
   ctx.stroke();
 
-  for (let i: number = 0; i < currCrit.length; i++) {
-    ctx.fillStyle = critPal[currCrit[i].id];
+  for (let i: number = 0; i < critData.length; i++) {
+    ctx.fillStyle = critPal[critData[i].id];
     ctx.fillRect(
       0,
       tileSize * (i + 1),
@@ -179,11 +191,9 @@ function drawChartCanvas() {
     ctx.fillStyle = "black";
     ctx.letterSpacing = "1px";
     ctx.textAlign = "right";
-
-    ctx.fillStyle = "black";
     ctx.font = "12px Arial";
     ctx.fillText(
-      currCrit[i].hit.toString() + "/" + currCrit[i].total.toString(),
+      critData[i].hits.toString() + "/" + critData[i].total.toString(),
       selectOffsetX - 32,
       (i + 2) * tileSize - 10,
     );
@@ -192,7 +202,7 @@ function drawChartCanvas() {
       selectOffsetX - tileSize - 1,
       (i + 1) * tileSize,
       0,
-      currCrit[i].id,
+      critData[i].id,
       pntIcons,
       chartCanvas,
     );
@@ -209,34 +219,24 @@ function drawChartCanvas() {
   ctx.fillText(
     "Buttons",
     selectOffsetX - 7,
-    (currCrit.length + 2) * tileSize - 9,
+    (critData.length + 2) * tileSize - 9,
   );
   ctx.fillText(
     "Timing",
     selectOffsetX - 7,
-    (currCrit.length + 3) * tileSize - 9,
+    (critData.length + 3) * tileSize - 9,
   );
 
   ctx.strokeStyle = "black";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(selectOffsetX - 1, tileSize);
-  ctx.lineTo(selectOffsetX - 1, (currCrit.length + 1) * tileSize);
+  ctx.lineTo(selectOffsetX - 1, (critData.length + 1) * tileSize);
   ctx.stroke();
-
-  if (selectX > -1 && selectX < gameData.inputs.length) {
-    ctx.fillStyle = "#ffffff30";
-    ctx.fillRect(
-      (selectX * tileSize) + selectOffsetX,
-      tileSize * (currCrit.length + 1),
-      tileSize,
-      tileSize * 2,
-    );
-  }
 
   for (let i: number = 0; i < gameData.inputs.length; i++) {
     ctx.filter = "brightness(100%)";
-    const iindex = gameData.inputs[i].criteria == currCrit.length - 1
+    const iindex = gameData.inputs[i].criteria == critData.length - 1
       ? 4
       : gameData.inputs[i].criteria;
     const itype = btnPressed[i] ? 1 : 4;
@@ -249,25 +249,64 @@ function drawChartCanvas() {
       pntIcons,
       chartCanvas,
     );
+  }
 
-    if (selectX == i && selectY == currCrit.length + 1) {
+  ctx.filter = "none";
+}
+
+function drawInterface() {
+  const ctx = chartCanvas.getContext("2d")!;
+  if (!ctx) return;
+
+  ctx.fillStyle = "#141414ff";
+  ctx.fillRect(
+    selectOffsetX,
+    tileSize * (critData.length + 1),
+    gameData.inputs.length * tileSize,
+    tileSize * 2,
+  );
+
+  if (selectX > -1 && selectX < gameData.inputs.length) {
+    ctx.fillStyle = "#ffffff30";
+    ctx.fillRect(
+      (selectX * tileSize) + selectOffsetX,
+      tileSize * (critData.length + 1),
+      tileSize,
+      tileSize * 2,
+    );
+  }
+
+  for (let i: number = 0; i < gameData.inputs.length; i++) {
+    ctx.filter = "brightness(100%)";
+
+    if (selectX == i && selectY == critData.length + 1) {
       ctx.filter = "brightness(150%)";
       if (mouseFocus != 0) ctx.filter = "brightness(75%)";
-    } else {
-      ctx.filter = "brightness(100%)";
     }
 
-    if (!btnPressed[i]) {
-      ctx.filter += "grayscale(100%)";
-    }
+    if (!btnPressed[i]) ctx.filter += "grayscale(100%)";
 
     drawIcon(
       (i * tileSize) + selectOffsetX,
-      (currCrit.length + 1) * tileSize,
+      (critData.length + 1) * tileSize,
       gameData.inputs[i].button,
       0,
       btnIcons,
       chartCanvas,
+    );
+
+    ctx.filter = "brightness(100%)";
+    ctx.fillStyle = "white";
+    ctx.letterSpacing = "1px";
+    ctx.textAlign = "center";
+    ctx.font = "12px Arial";
+
+    if (!btnPressed[i]) ctx.filter = "brightness(50%)";
+
+    ctx.fillText(
+      btnAccuracy[i].toString(),
+      (i * tileSize) + selectOffsetX + 15,
+      (critData.length + 2) * tileSize + 20,
     );
   }
   ctx.filter = "none";
@@ -317,13 +356,13 @@ function updateText() {
   temp.style.borderCollapse = "collapse";
   temp.style.font = "16px FOT-Seurat Pro";
 
-  for (let i = 0; i < currCrit.length + 1; i++) {
+  for (let i = 0; i < critData.length + 1; i++) {
     const row = temp.insertRow(-1);
     for (let j = 0; j < 6; j++) {
       const cell = row.insertCell(-1);
       cell.style.border = "1px solid black";
       cell.style.textAlign = "center";
-      cell.style.width = "100px";
+      cell.style.width = "120px";
       cell.style.height = "0px";
       cell.style.padding = "0px";
 
@@ -332,53 +371,61 @@ function updateText() {
       switch (j) {
         case 0: {
           cell.style.textAlign = "right";
-          cell.style.width = "125px";
+          cell.style.width = "30px";
           cell.style.padding = "0px 8px 0px 8px";
-          if (i == 0) text = "name";
-          else {
-            text = currCrit[i - 1].name;
+          if (i > 0) {
+            const miniCanvas = document.createElement("canvas");
+            miniCanvas.width = 30;
+            miniCanvas.height = 30;
+
+            drawIcon(0, 0, 0, critData[i - 1].id, pntIcons, miniCanvas);
+            cell.appendChild(miniCanvas);
           }
 
           break;
         }
         case 1: {
-          if (i == 0) text = "weight";
+          cell.style.textAlign = "right";
+          cell.style.width = "125px";
+          cell.style.padding = "0px 8px 0px 8px";
+          if (i == 0) text = "Name";
           else {
-            text = currCrit[i - 1].weight + "%";
+            text = critData[i - 1].name;
           }
+
           break;
         }
         case 2: {
-          if (i == 0) text = "hit";
+          if (i == 0) text = "Weight";
           else {
-            text = currCrit[i - 1].hit.toString();
+            text = critData[i - 1].weight + "%";
           }
           break;
         }
         case 3: {
-          if (i == 0) text = "miss";
+          if (i == 0) text = "Hit Score";
           else {
-            text = (currCrit[i - 1].total - currCrit[i - 1].hit).toString();
+            text = critData[i - 1].score.toString();
           }
           break;
         }
         case 4: {
-          if (i == 0) text = "total";
+          if (i == 0) text = "Total Score";
           else {
-            text = currCrit[i - 1].total.toString();
+            text = (critData[i - 1].total * 100).toString();
           }
           break;
         }
         case 5: {
-          if (i == 0) text = "result";
+          if (i == 0) text = "Result";
           else {
-            text = badRounding(currCrit[i - 1].score).toString();
+            text = badRounding(critData[i - 1].result).toString() + "%";
           }
           break;
         }
       }
 
-      cell.appendChild(document.createTextNode(text));
+      if (j > 0) cell.appendChild(document.createTextNode(text));
     }
   }
 
@@ -390,40 +437,60 @@ function badRounding(n: number) {
   return n > 0 ? Math.floor(n * 100) / 100 : Math.ceil(n * 100) / 100;
 }
 
-btnIcons.onload = () => updatePage();
-pntIcons.onload = () => updatePage();
-meter.onload = () => updatePage();
+btnIcons.onload = () => updatePage(true);
+pntIcons.onload = () => updatePage(true);
+meter.onload = () => updatePage(true);
 
-globalThis.addEventListener("resize", updatePage);
+globalThis.addEventListener("resize", updatePage.bind(null, true));
 
 chartCanvas.addEventListener("mousemove", (e) => {
   selectX = Math.floor((e.offsetX - selectOffsetX) / 30);
   selectY = Math.floor(e.offsetY / 30);
-  if (mouseFocus == 2 && selectY == currCrit.length + 1) {
+  if (mouseFocus == 2 && selectY == critData.length + 1) {
     btnPressed[selectX] = drawState;
+    updatePage(true);
+  } else if ((mouseFocus == 3 || mouseFocus == 4)) {
+    btnAccuracy[selectX] = drawAccState;
+    if (selectX != prevSelectX || selectY != critData.length + 2) {
+      mouseFocus = 4;
+    }
+    updatePage(true);
+  } else {
+    updatePage(false);
   }
-  updatePage();
 });
 
 chartCanvas.addEventListener("mousedown", () => {
+  prevSelectX = selectX;
   mouseFocus = 1;
-  if (selectY == currCrit.length + 1) {
+  if (selectY == critData.length + 1) {
     mouseFocus = 2;
     drawState = !btnPressed[selectX];
     btnPressed[selectX] = !btnPressed[selectX];
+  } else if (selectY == critData.length + 2) {
+    mouseFocus = 3;
+    drawAccState = btnAccuracy[selectX];
   }
-  updatePage();
+  updatePage(true);
 });
 
 chartCanvas.addEventListener("mouseup", () => {
+  if (mouseFocus == 3 && btnPressed[selectX]) {
+    const newNum = prompt(
+      "Enter number 0-100",
+      btnAccuracy[selectX].toString(),
+    );
+    if (!isNaN(Number(newNum))) btnAccuracy[selectX] = Number(newNum);
+  }
   mouseFocus = 0;
-  updatePage();
+  updatePage(true);
 });
 
 chartCanvas.addEventListener("mouseleave", () => {
   selectX = -1;
   selectY = -1;
-  updatePage();
+  mouseFocus = 0;
+  updatePage(false);
 });
 
 function drawIcon(
