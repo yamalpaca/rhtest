@@ -947,7 +947,7 @@ export const gameData: Game[] = [
     ],
   },
   { // Tap Trial
-    name: "",
+    name: "Tap Trial",
     critname: ["Single Tap", "Double Tap", "Triple Tap", "Jump Tap"],
     critweight: [25, 25, 25, 17, 8],
     inputs: [

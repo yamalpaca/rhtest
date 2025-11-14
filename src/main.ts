@@ -22,28 +22,80 @@ const critPal: string[] = [
   "#FFE002",
 ];
 
-const gd = gameData[0];
+const tileSize: number = 30;
+const selectOffsetX: number = 90;
+const loadDist = 1;
+
+let gd = gameData[0];
+let pressCounter: number;
+let finalScore: number;
+let prevScore: number;
+let selectX: number;
+let prevSelectX: number;
+let selectY: number;
+let prevSelectY: number;
+let maxWidth: number;
+let scrollX: number;
+let dragStartX: number;
+let dragStartScrollX: number;
+let drawState: boolean;
+let drawAccState: number;
+let mouseFocus: number;
+
+
+const critData: Criteria[] = [];
+
+const titleSubText = document.createElement("h1");
+titleSubText.textContent = "Rhythm Heaven Megamix";
+titleSubText.className = "title-sub";
+document.body.append(titleSubText);
+
+const titleText = document.createElement("h1");
+titleText.textContent = "Score Calculator";
+titleText.className = "title-main";
+document.body.append(titleText);
 
 const chartContainer = document.createElement("div");
 chartContainer.className = "chart-container";
 document.body.append(chartContainer);
 
+const dropDown = document.createElement("select");
+dropDown.className = "dropdown";
+
+for (let i = 1; i <= gameData.length; i++) {
+  const option = document.createElement("option");
+  option.textContent = gameData[i-1].name;
+  option.value = i.toString();
+  dropDown.appendChild(option);
+}
+
+const dropdownWrapper = document.createElement("div");
+dropdownWrapper.style.display = "flex";
+dropdownWrapper.style.alignItems = "center";
+dropdownWrapper.style.gap = "10px";
+dropdownWrapper.style.marginBottom = "10px";
+
+dropdownWrapper.appendChild(dropDown);
+chartContainer.append(dropdownWrapper);
+
+dropDown.addEventListener("change", () => {
+  loadGame(parseInt(dropDown.value) - 1);
+});
+
 const chartCanvas = document.createElement("canvas");
 chartContainer.append(chartCanvas);
-chartCanvas.style.borderRadius = "10px";
-chartCanvas.style.border = "2px solid white";
+chartCanvas.className = "chart-canvas";
 
 const chartTextRow = document.createElement("div");
 chartTextRow.className = "chart-text-row";
 chartContainer.append(chartTextRow);
 
 const pressText = document.createElement("p");
-pressText.style.font = "12px FOT-Seurat Pro";
+pressText.className = "press-text";
 chartTextRow.append(pressText);
-let pressCounter: number;
 
 const diffText = document.createElement("p");
-diffText.style.font = "12px FOT-Seurat Pro";
+diffText.className = "diff-text";
 chartTextRow.append(diffText);
 
 const meterWrapper = document.createElement("div");
@@ -56,25 +108,22 @@ meterWrapper.append(meterContainer);
 
 const meterCanvas = document.createElement("canvas");
 meterContainer.append(meterCanvas);
-meterCanvas.style.border = "1.5px solid white";
+meterCanvas.className = "meter-canvas";
 meterCanvas.width = 232;
 meterCanvas.height = 48;
-meterCanvas.style.borderRadius = "16px";
 
 const scoreText = document.createElement("p");
 scoreText.textContent = "";
-scoreText.style.fontFamily = "Kurokane";
-scoreText.style.fontSize = "32px";
-scoreText.style.textAlign = "right";
-scoreText.style.letterSpacing = "-2px";
+scoreText.className = "score-text";
 meterContainer.append(scoreText);
-let finalScore: number;
-let prevScore: number;
 
-let dataTable = document.createElement("table");
+let dataTable = document.createElement("div");
 chartContainer.append(dataTable);
 
-const tileSize: number = 30;
+const creditsText = document.createElement("h1");
+creditsText.textContent = "yamalpaca - v.0.1.0";
+creditsText.className = "credits";
+document.body.append(creditsText);
 
 const btnIcons = new Image();
 btnIcons.src = btnimg;
@@ -83,27 +132,37 @@ pntIcons.src = pntimg;
 const meter = new Image();
 meter.src = meterimg;
 
-let selectX: number = -1;
-let prevSelectX: number = -1;
-let selectY: number = -1;
-let prevSelectY: number = -1;
-const selectOffsetX = 90;
-let mouseFocus: number = 0;
-const critData: Criteria[] = [];
+const btnPressed: boolean[] = [];
+const btnAccuracy: number[] = [];
 
-let maxWidth: number;
-const loadDist = 1;
-let scrollX = 0;
-let dragStartX: number;
-let dragStartScrollX: number;
+function loadGame(index: number){
+  gd = gameData[index];
 
-const btnPressed: boolean[] = Array(gd.inputs.length).fill(true);
-const btnAccuracy: number[] = Array(gd.inputs.length).fill(100);
-let drawState: boolean;
-let drawAccState: number;
+  mouseFocus = 0;
+  selectX = -1;
+  prevSelectX = -1;
+  selectY = -1;
+  prevSelectY = -1;
+  mouseFocus = 0;
+  scrollX = 0;
+  finalScore = 100;
+  prevScore = 100;
+  critData.splice(0, critData.length);
+  btnPressed.splice(0, btnPressed.length);
+  btnAccuracy.splice(0, btnAccuracy.length);
+  btnPressed.push(...Array(gd.inputs.length).fill(true));
+  btnAccuracy.push(...Array(gd.inputs.length).fill(100));
+
+  diffText.textContent = "";
+
+  updatePage(true);
+}
+loadGame(0);
 
 function updatePage(all: boolean) {
   if (all) {
+    updateData();
+
     chartCanvas.width = (gd.inputs.length * tileSize) + selectOffsetX;
 
     if (chartCanvas.width > (40.5 * tileSize) + selectOffsetX) {
@@ -117,24 +176,19 @@ function updatePage(all: boolean) {
 
     maxWidth = Math.floor((chartCanvas.width - selectOffsetX) / tileSize);
 
-    updateData();
     drawChart();
     updateText();
     drawMeterCanvas();
   }
 
   drawInterface();
-
   drawHeader();
 }
 
 function updateData() {
   critData.splice(0, critData.length);
-
   prevScore = finalScore;
-
   finalScore = 0;
-
   pressCounter = 0;
 
   for (let i: number = 0; i < gd.critweight.length; i++) {
@@ -392,11 +446,9 @@ function drawMeterCanvas() {
       ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
       ctx.fillStyle = "#00BE00";
       ctx.fillRect(9, 9, 214 * 0.8, 30);
-      scoreText.style.color = "#FF0000";
     } else {
       ctx.fillStyle = "#00BE00";
       ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
-      scoreText.style.color = "#00BE00";
     }
 
     ctx.fillStyle = "#00B4FF";
@@ -406,6 +458,11 @@ function drawMeterCanvas() {
     ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
   }
 
+  if (+scoreText.textContent >= 80) {
+    scoreText.style.color = "#FF0000";
+  } else if (+scoreText.textContent >= 60) {
+    scoreText.style.color = "#00BE00";
+  }
   ctx.drawImage(meter, 0, 0, 232, 48);
 }
 
@@ -414,7 +471,6 @@ function updateText() {
   if (!pressText) return;
   if (!diffText) return;
 
-  
   scoreText.textContent = Math.floor(finalScore).toString();
   pressText.textContent = "Presses: " + pressCounter.toString();
   if (finalScore != prevScore && prevScore !== undefined) {
@@ -426,42 +482,28 @@ function updateText() {
   diffText.style.color = "rgb(82, 73, 99)";
 
   const temp = document.createElement("table");
-  temp.style.borderCollapse = "collapse";
-  temp.style.font = "16px FOT-Seurat Pro";
-  temp.style.border = "none";
-  //temp.style.backgroundColor = "rgba(130, 115, 160, 1)";
-  //temp.style.borderRadius = "10px";
-  
+  temp.className = "data-table";
 
   const box = document.createElement("div");
-  box.style.backgroundColor = "rgba(130, 115, 160, 1)";
-  box.style.borderRadius = "10px";
-  box.style.padding = "0 0 0 0";
-  box.style.display = "inline-block";
+  box.className = "data-box";
   box.appendChild(temp);
 
-  // top header row: place "placeholder" above the Name and Weight columns
   const topRow = temp.insertRow(-1);
-  // create 7 cells to match the table columns (including separator)
   for (let tc = 0; tc < 7; tc++) {
     const th = topRow.insertCell(-1);
     th.style.border = "none";
     th.style.textAlign = "center";
-    th.style.color = "rgba(213, 193, 252, 1)";
+    th.style.color = "rgba(232, 219, 255, 1)";
     th.style.fontSize = "14px";
     if (tc === 1) {
-      // span Name and Weight columns (tc=1 covers Name and Weight via colspan=2)
       th.colSpan = 2;
       th.textContent = "Criterias";
-      // skip next index since colspan covers it
       tc++;
       continue;
     }
     if (tc === 3) {
-      // span Name and Weight columns (tc=1 covers Name and Weight via colspan=2)
       th.colSpan = 4;
       th.textContent = "Scores";
-      // skip next index since colspan covers it
       tc++;
       continue;
     }
@@ -469,8 +511,7 @@ function updateText() {
 
   for (let i = 0; i < critData.length + 1; i++) {
     const row = temp.insertRow(-1);
-    
-    // add one extra column as a separator between Weight and Hit Score
+
     for (let j = 0; j < 7; j++) {
       const cell = row.insertCell(-1);
       cell.style.border = "1.5px solid #000000cc";
@@ -480,7 +521,6 @@ function updateText() {
 
       if ( i == 0 ) { 
         cell.style.background = "rgba(101, 90, 121, 1)";
-        //if( j == 2 || j == 5) cell.style.background = "rgba(66, 59, 77, 1)";
         cell.style.color = "white";
       } else {
         cell.style.background = critPal[critData[i - 1].id];
@@ -566,7 +606,7 @@ function updateText() {
   
 
   dataTable.replaceWith(box);
-  dataTable = temp;
+  dataTable = box;
 }
 
 function badRounding(n: number) {
@@ -697,3 +737,4 @@ function drawIcon(
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, ix * 30, iy * 30, 30, 30, x, y, 30, 30);
 }
+
