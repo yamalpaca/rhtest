@@ -22,7 +22,7 @@ const critPal: string[] = [
   "#FFE002",
 ];
 
-const gd = gameData[0];
+const gd = gameData[9];
 
 const chartCanvas = document.createElement("canvas");
 document.body.append(chartCanvas);
@@ -68,6 +68,9 @@ const critData: Criteria[] = [];
 
 let maxWidth: number;
 const loadDist = 1;
+let scrollX = 0;
+let dragStartX: number;
+let dragStartScrollX: number;
 
 const btnPressed: boolean[] = Array(gd.inputs.length).fill(true);
 const btnAccuracy: number[] = Array(gd.inputs.length).fill(100);
@@ -77,6 +80,10 @@ let drawAccState: number;
 function updatePage(all: boolean) {
   if (all) {
     chartCanvas.width = (gd.inputs.length * tileSize) + selectOffsetX;
+
+    if (chartCanvas.width > (40.5 * tileSize) + selectOffsetX) {
+      chartCanvas.width = (40.5 * tileSize) + selectOffsetX;
+    }
 
     if (chartCanvas.width > globalThis.innerWidth - 15) {
       chartCanvas.width = globalThis.innerWidth - 15;
@@ -250,23 +257,29 @@ function drawChartCanvas() {
   ctx.textAlign = "center";
   ctx.font = "12px Arial";
 
-  for (let i: number = -loadDist; i < maxWidth + loadDist; i++) {
-    if (!gd.inputs[i]) continue;
+  for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
+    const ioffset = i + Math.floor(scrollX / tileSize);
 
-    if (i % 5 == 0) {
+    if (!gd.inputs[ioffset]) continue;
+
+    if ((ioffset % 5) == 4) {
       ctx.filter = "brightness(50%)";
-      ctx.fillText(i.toString(), (i * tileSize) + selectOffsetX + 15, 15);
+      ctx.fillText(
+        (ioffset + 1).toString(),
+        (ioffset * tileSize) + selectOffsetX - scrollX + 15,
+        15,
+      );
     }
 
     ctx.filter = "brightness(100%)";
-    const iindex = gd.inputs[i].criteria == critData.length - 1
+    const iindex = gd.inputs[ioffset].criteria == critData.length - 1
       ? 4
-      : gd.inputs[i].criteria;
-    const itype = btnPressed[i] ? 1 : 4;
+      : gd.inputs[ioffset].criteria;
+    const itype = btnPressed[ioffset] ? 1 : 4;
 
     drawIcon(
-      (i * tileSize) + selectOffsetX,
-      (gd.inputs[i].criteria + 1) * tileSize,
+      (i * tileSize) + selectOffsetX - (scrollX % 30),
+      (gd.inputs[ioffset].criteria + 1) * tileSize,
       itype,
       iindex,
       pntIcons,
@@ -292,29 +305,32 @@ function drawInterface() {
   if (selectX > -1 && selectX < gd.inputs.length) {
     ctx.fillStyle = "#ffffff30";
     ctx.fillRect(
-      (selectX * tileSize) + selectOffsetX,
+      ((selectX - Math.floor(scrollX / tileSize)) * tileSize) + selectOffsetX -
+        (scrollX % 30),
       tileSize * (critData.length + 1),
       tileSize,
       tileSize * 2,
     );
   }
 
-  for (let i: number = -loadDist; i < maxWidth + loadDist; i++) {
-    if (!gd.inputs[i]) continue;
+  for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
+    const ioffset = i + Math.floor(scrollX / tileSize);
+
+    if (!gd.inputs[ioffset]) continue;
 
     ctx.filter = "brightness(100%)";
 
-    if (selectX == i && selectY == 0) {
+    if (selectX == ioffset && selectY == 0) {
       ctx.filter = "brightness(150%)";
       if (mouseFocus != 0) ctx.filter = "brightness(75%)";
     }
 
-    if (!btnPressed[i]) ctx.filter += "grayscale(100%)";
+    if (!btnPressed[ioffset]) ctx.filter += "grayscale(100%)";
 
     drawIcon(
-      (i * tileSize) + selectOffsetX,
+      (i * tileSize) + selectOffsetX - (scrollX % 30),
       (critData.length + 1) * tileSize,
-      gd.inputs[i].button,
+      gd.inputs[ioffset].button,
       0,
       btnIcons,
       chartCanvas,
@@ -326,11 +342,11 @@ function drawInterface() {
     ctx.textAlign = "center";
     ctx.font = "12px Arial";
 
-    if (!btnPressed[i]) ctx.filter = "brightness(50%)";
+    if (!btnPressed[ioffset]) ctx.filter = "brightness(50%)";
 
     ctx.fillText(
-      btnAccuracy[i].toString(),
-      (i * tileSize) + selectOffsetX + 15,
+      btnAccuracy[ioffset].toString(),
+      (i * tileSize) + selectOffsetX + 15 - (scrollX % 30),
       (critData.length + 2) * tileSize + 20,
     );
   }
@@ -471,12 +487,42 @@ meter.onload = () => updatePage(true);
 globalThis.addEventListener("resize", updatePage.bind(null, true));
 
 chartCanvas.addEventListener("mousemove", (e) => {
-  selectX = Math.floor((e.offsetX - selectOffsetX) / 30);
+  if (mouseFocus == 5) {
+    selectX = -1;
+    selectY = -1;
 
+    scrollX = dragStartScrollX + (dragStartX - e.offsetX);
+
+    scrollX = Math.max(
+      0,
+      Math.min(
+        scrollX,
+        Math.max(
+          0,
+          gd.inputs.length * tileSize - (chartCanvas.width - selectOffsetX),
+        ),
+      ),
+    );
+    updatePage(true);
+    return;
+  }
+
+  selectX =
+    Math.floor((e.offsetX - selectOffsetX + (scrollX % 30)) / tileSize) +
+    Math.floor(scrollX / tileSize);
   selectY = Math.floor(e.offsetY / 30) - critData.length - 1;
+
+  document.body.style.cursor = "default";
+  if (e.offsetX > selectOffsetX && selectY < 0) {
+    document.body.style.cursor = "grab";
+  }
+
   if (selectY < -1) selectY = -1;
 
-  if (e.offsetX < selectOffsetX) mouseFocus = 0;
+  if (e.offsetX < selectOffsetX) {
+    mouseFocus = 0;
+    selectX = -1;
+  }
 
   if (mouseFocus == 2 && selectY == 0) {
     btnPressed[selectX] = drawState;
@@ -494,8 +540,19 @@ chartCanvas.addEventListener("mousemove", (e) => {
   prevSelectY = selectY;
 });
 
-chartCanvas.addEventListener("mousedown", () => {
-  mouseFocus = 1;
+chartCanvas.addEventListener("mousedown", (e) => {
+  dragStartX = e.offsetX;
+  dragStartScrollX = scrollX;
+  mouseFocus = 5;
+  document.body.style.cursor = "grabbing";
+
+  if (e.offsetX < selectOffsetX) {
+    mouseFocus = 1;
+    return;
+  }
+
+  if (selectY > -1) document.body.style.cursor = "default";
+
   if (selectY == 0) {
     mouseFocus = 2;
     drawState = !btnPressed[selectX];
@@ -507,7 +564,14 @@ chartCanvas.addEventListener("mousedown", () => {
   updatePage(true);
 });
 
-chartCanvas.addEventListener("mouseup", () => {
+chartCanvas.addEventListener("mouseup", (e) => {
+  if (mouseFocus == 5) {
+    selectX =
+      Math.floor((e.offsetX - selectOffsetX + (scrollX % 30)) / tileSize) +
+      Math.floor(scrollX / tileSize);
+    selectY = Math.floor(e.offsetY / 30) - critData.length - 1;
+  }
+
   if (mouseFocus == 3 && btnPressed[selectX]) {
     const newNum = prompt(
       "Enter number 0-100",
@@ -520,6 +584,7 @@ chartCanvas.addEventListener("mouseup", () => {
 });
 
 chartCanvas.addEventListener("mouseleave", () => {
+  document.body.style.cursor = "default";
   selectX = -1;
   selectY = -1;
   prevSelectX = selectX;
