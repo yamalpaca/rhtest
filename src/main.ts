@@ -64,7 +64,7 @@ dropDown.className = "dropdown";
 
 for (let i = 1; i <= gameData.length; i++) {
   const option = document.createElement("option");
-  option.textContent = gameData[i-1].name;
+  option.textContent = gameData[i - 1].name;
   option.value = i.toString();
   dropDown.appendChild(option);
 }
