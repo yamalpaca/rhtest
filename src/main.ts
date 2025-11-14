@@ -42,7 +42,6 @@ let drawState: boolean;
 let drawAccState: number;
 let mouseFocus: number;
 
-
 const critData: Criteria[] = [];
 
 const titleSubText = document.createElement("h1");
@@ -135,7 +134,7 @@ meter.src = meterimg;
 const btnPressed: boolean[] = [];
 const btnAccuracy: number[] = [];
 
-function loadGame(index: number){
+function loadGame(index: number) {
   gd = gameData[index];
 
   mouseFocus = 0;
@@ -519,7 +518,7 @@ function updateText() {
       cell.style.height = "0px";
       cell.style.padding = "0px";
 
-      if ( i == 0 ) { 
+      if (i == 0) {
         cell.style.background = "rgba(101, 90, 121, 1)";
         cell.style.color = "white";
       } else {
@@ -602,8 +601,6 @@ function updateText() {
       if (j > 0 && j !== 3) cell.appendChild(document.createTextNode(text));
     }
   }
-
-  
 
   dataTable.replaceWith(box);
   dataTable = box;
@@ -737,4 +734,3 @@ function drawIcon(
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, ix * 30, iy * 30, 30, 30, x, y, 30, 30);
 }
-
