@@ -1,3 +1,43 @@
+body {
+  background-color: rgb(186, 164, 228);
+}
+
+.chart-container {
+  position: relative;
+  display: inline-block;
+}
+
+.chart-text-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.chart-text-row p {
+  margin: 0;
+  padding: 4px 8px;
+}
+
+.meter-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.meter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.meter-container p {
+  margin: 0 100px 0 0;
+  align-self: flex-end;
+  text-align: right;
+  -webkit-text-stroke: 0.75px white;
+}
+
 canvas {
   display: block;
 }

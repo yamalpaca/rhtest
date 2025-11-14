@@ -22,32 +22,57 @@ const critPal: string[] = [
   "#FFE002",
 ];
 
-const gd = gameData[gameData.length - 1];
+const gd = gameData[0];
+
+const chartContainer = document.createElement("div");
+chartContainer.className = "chart-container";
+document.body.append(chartContainer);
 
 const chartCanvas = document.createElement("canvas");
-document.body.append(chartCanvas);
+chartContainer.append(chartCanvas);
+chartCanvas.style.borderRadius = "10px";
+chartCanvas.style.border = "2px solid white";
+
+const chartTextRow = document.createElement("div");
+chartTextRow.className = "chart-text-row";
+chartContainer.append(chartTextRow);
 
 const pressText = document.createElement("p");
-pressText.style.fontFamily = "Arial";
-document.body.append(pressText);
+pressText.style.font = "12px FOT-Seurat Pro";
+chartTextRow.append(pressText);
 let pressCounter: number;
 
 const diffText = document.createElement("p");
-diffText.style.fontFamily = "Arial";
-document.body.append(diffText);
+diffText.style.font = "12px FOT-Seurat Pro";
+chartTextRow.append(diffText);
+
+const meterWrapper = document.createElement("div");
+meterWrapper.className = "meter-wrapper";
+chartContainer.append(meterWrapper);
+
+const meterContainer = document.createElement("div");
+meterContainer.className = "meter-container";
+meterWrapper.append(meterContainer);
 
 const meterCanvas = document.createElement("canvas");
-document.body.append(meterCanvas);
+meterContainer.append(meterCanvas);
+meterCanvas.style.border = "1.5px solid white";
+meterCanvas.width = 232;
+meterCanvas.height = 48;
+meterCanvas.style.borderRadius = "16px";
 
 const scoreText = document.createElement("p");
 scoreText.textContent = "";
 scoreText.style.fontFamily = "Kurokane";
-document.body.append(scoreText);
+scoreText.style.fontSize = "32px";
+scoreText.style.textAlign = "right";
+scoreText.style.letterSpacing = "-2px";
+meterContainer.append(scoreText);
 let finalScore: number;
 let prevScore: number;
 
 let dataTable = document.createElement("table");
-document.body.append(dataTable);
+chartContainer.append(dataTable);
 
 const tileSize: number = 30;
 
@@ -89,12 +114,11 @@ function updatePage(all: boolean) {
       chartCanvas.width = globalThis.innerWidth - 15;
     }
     chartCanvas.height = tileSize * (critData.length + 3);
-    chartCanvas.style.borderRadius = "10px";
 
     maxWidth = Math.floor((chartCanvas.width - selectOffsetX) / tileSize);
 
     updateData();
-    drawChartCanvas();
+    drawChart();
     updateText();
     drawMeterCanvas();
   }
@@ -220,7 +244,7 @@ function drawHeader() {
   ctx.stroke();
 }
 
-function drawChartCanvas() {
+function drawChart() {
   const ctx = chartCanvas.getContext("2d")!;
   if (!ctx) return;
 
@@ -360,15 +384,19 @@ function drawMeterCanvas() {
   ctx.fillStyle = "#2A2A2A";
   ctx.fillRect(9, 9, 214, 30);
 
+  scoreText.style.color = "#00B4FF";
+
   if (+scoreText.textContent > 60) {
     if (+scoreText.textContent > 80) {
       ctx.fillStyle = "#FF0000";
       ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
       ctx.fillStyle = "#00BE00";
       ctx.fillRect(9, 9, 214 * 0.8, 30);
+      scoreText.style.color = "#FF0000";
     } else {
       ctx.fillStyle = "#00BE00";
       ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
+      scoreText.style.color = "#00BE00";
     }
 
     ctx.fillStyle = "#00B4FF";
@@ -386,26 +414,77 @@ function updateText() {
   if (!pressText) return;
   if (!diffText) return;
 
+  
   scoreText.textContent = Math.floor(finalScore).toString();
   pressText.textContent = "Presses: " + pressCounter.toString();
   if (finalScore != prevScore && prevScore !== undefined) {
     diffText.textContent = finalScore >= prevScore ? "+" : "";
-    diffText.textContent += (finalScore - prevScore).toString();
+    diffText.textContent += (finalScore - prevScore).toFixed(2).toString();
   }
+
+  pressText.style.color = "rgb(82, 73, 99)";
+  diffText.style.color = "rgb(82, 73, 99)";
 
   const temp = document.createElement("table");
   temp.style.borderCollapse = "collapse";
   temp.style.font = "16px FOT-Seurat Pro";
+  temp.style.border = "none";
+  //temp.style.backgroundColor = "rgba(130, 115, 160, 1)";
+  //temp.style.borderRadius = "10px";
+  
+
+  const box = document.createElement("div");
+  box.style.backgroundColor = "rgba(130, 115, 160, 1)";
+  box.style.borderRadius = "10px";
+  box.style.padding = "0 0 0 0";
+  box.style.display = "inline-block";
+  box.appendChild(temp);
+
+  // top header row: place "placeholder" above the Name and Weight columns
+  const topRow = temp.insertRow(-1);
+  // create 7 cells to match the table columns (including separator)
+  for (let tc = 0; tc < 7; tc++) {
+    const th = topRow.insertCell(-1);
+    th.style.border = "none";
+    th.style.textAlign = "center";
+    th.style.color = "rgba(213, 193, 252, 1)";
+    th.style.fontSize = "14px";
+    if (tc === 1) {
+      // span Name and Weight columns (tc=1 covers Name and Weight via colspan=2)
+      th.colSpan = 2;
+      th.textContent = "Criterias";
+      // skip next index since colspan covers it
+      tc++;
+      continue;
+    }
+    if (tc === 3) {
+      // span Name and Weight columns (tc=1 covers Name and Weight via colspan=2)
+      th.colSpan = 4;
+      th.textContent = "Scores";
+      // skip next index since colspan covers it
+      tc++;
+      continue;
+    }
+  }
 
   for (let i = 0; i < critData.length + 1; i++) {
     const row = temp.insertRow(-1);
-    for (let j = 0; j < 6; j++) {
+    
+    // add one extra column as a separator between Weight and Hit Score
+    for (let j = 0; j < 7; j++) {
       const cell = row.insertCell(-1);
-      cell.style.border = "1px solid black";
+      cell.style.border = "1.5px solid #000000cc";
       cell.style.textAlign = "center";
-      cell.style.width = "120px";
       cell.style.height = "0px";
       cell.style.padding = "0px";
+
+      if ( i == 0 ) { 
+        cell.style.background = "rgba(101, 90, 121, 1)";
+        //if( j == 2 || j == 5) cell.style.background = "rgba(66, 59, 77, 1)";
+        cell.style.color = "white";
+      } else {
+        cell.style.background = critPal[critData[i - 1].id];
+      }
 
       let text = "";
 
@@ -414,6 +493,8 @@ function updateText() {
           cell.style.textAlign = "right";
           cell.style.width = "30px";
           cell.style.padding = "0px 8px 0px 8px";
+          cell.style.background = "transparent";
+          cell.style.border = "none";
           if (i > 0) {
             const miniCanvas = document.createElement("canvas");
             miniCanvas.width = 30;
@@ -427,7 +508,6 @@ function updateText() {
         }
         case 1: {
           cell.style.textAlign = "right";
-          cell.style.width = "150px";
           cell.style.padding = "0px 8px 0px 8px";
           if (i == 0) text = "Name";
           else {
@@ -437,6 +517,7 @@ function updateText() {
           break;
         }
         case 2: {
+          cell.style.width = "80px";
           if (i == 0) text = "Weight";
           else {
             text = critData[i - 1].weight + "%";
@@ -444,20 +525,30 @@ function updateText() {
           break;
         }
         case 3: {
+          cell.style.width = "5px";
+          cell.style.padding = "0";
+          cell.style.background = "transparent";
+          cell.style.border = "none";
+          break;
+        }
+        case 4: {
+          cell.style.width = "120px";
           if (i == 0) text = "Hit Score";
           else {
             text = critData[i - 1].score.toString();
           }
           break;
         }
-        case 4: {
+        case 5: {
+          cell.style.width = "120px";
           if (i == 0) text = "Total Score";
           else {
             text = (critData[i - 1].total * 100).toString();
           }
           break;
         }
-        case 5: {
+        case 6: {
+          cell.style.width = "120px";
           if (i == 0) text = "Result";
           else {
             text =
@@ -468,11 +559,13 @@ function updateText() {
         }
       }
 
-      if (j > 0) cell.appendChild(document.createTextNode(text));
+      if (j > 0 && j !== 3) cell.appendChild(document.createTextNode(text));
     }
   }
 
-  dataTable.replaceWith(temp);
+  
+
+  dataTable.replaceWith(box);
   dataTable = temp;
 }
 
