@@ -22,7 +22,7 @@ const critPal: string[] = [
   "#FFE002",
 ];
 
-const gd = gameData[9];
+const gd = gameData[gameData.length - 1];
 
 const chartCanvas = document.createElement("canvas");
 document.body.append(chartCanvas);
