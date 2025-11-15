@@ -4,7 +4,7 @@ import meterimg from "./meterimg.png";
 import pntimg from "./pntimg.png";
 import "./style.css";
 
-const customFont = new FontFace('SeuratPro', '/src/FOT-SeuratPro-B.otf');
+const customFont = new FontFace("SeuratPro", "/src/FOT-SeuratPro-B.otf");
 document.fonts.add(customFont);
 
 interface Criteria {

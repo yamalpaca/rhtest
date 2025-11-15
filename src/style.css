@@ -3,8 +3,8 @@ body {
 }
 
 @font-face {
-    font-family: 'SeuratPro';
-    src: url('/src/FOT-SeuratPro-B.otf') format('opentype');
+    font-family: "SeuratPro";
+    src: url("/src/FOT-SeuratPro-B.otf") format("opentype");
 }
 
 .chart-container {
