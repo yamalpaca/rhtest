@@ -4,6 +4,9 @@ import meterimg from "./meterimg.png";
 import pntimg from "./pntimg.png";
 import "./style.css";
 
+const customFont = new FontFace('SeuratPro', '/src/FOT-SeuratPro-B.otf');
+document.fonts.add(customFont);
+
 interface Criteria {
   id: number;
   name: string;
@@ -270,7 +273,7 @@ function drawHeader() {
     );
   }
 
-  ctx.font = "16px FOT-Seurat Pro";
+  ctx.font = "16px SeuratPro";
   ctx.letterSpacing = "1px";
   ctx.fillStyle = "white";
   ctx.fillText(
